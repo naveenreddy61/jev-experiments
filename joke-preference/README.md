@@ -119,4 +119,6 @@ PYTHONPATH=src uv run python -m unittest discover -s tests -t .
 `scripts/fetch_jester.py` downloads the Jester data. `joke-pref
 jester-evaluate --criteria X` scores the 100 jokes with one rubric and
 reports per-user concordance for 7,200 users next to the crowd and kNN
-ceilings. See `docs/jester-signal.md` and `docs/jester-results.md`.
+ceilings. `joke-pref jester-optimize` runs GEPA per user with a cross-user
+control. `joke-pref judge` puts DeepSeek Flash in Jev's place. Results in
+`docs/jester-results.md`, data study in `docs/jester-signal.md`.

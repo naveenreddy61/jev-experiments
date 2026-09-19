@@ -82,23 +82,27 @@ rubric beats generic on a paired test across users, cross-user control
 flat, and closes a good share of the gap to kNN, with no ratings read at
 inference.
 
-## Phase 1 done (2026-09-20)
+## Jester chunk done (2026-09-20)
 
-`joke-pref jester-evaluate` scores the 100 Jester jokes with one rubric and
-reports per-user concordance for all 7,200 users and for the 60 selected
-users, next to crowd and kNN on the same tercile labels. Result in
-`docs/jester-results.md`: the plain three-word rubric gives 0.604 (all) and
-0.553 (selected 60); crowd 0.650 / 0.524; kNN 0.710 / 0.734. Three generic
-rubrics tried, the plain one is best.
+All three phases ran in one overnight session. Read `docs/jester-results.md`
+first; its Summary section has the whole result in three bullets. Headline:
+on the 40 Jester users the crowd predicts badly, a GEPA rubric written from
+60 ratings lifts Jev 11 points over the generic rubric (30 wins to 10,
+p = 0.002), beats the crowd mean by 17 points, and closes about half of the
+distance to kNN, with no ratings at inference. The cross-user control sits
+at the generic level and shuffled labels give nothing. Typical users gain
+nothing. DeepSeek Flash as the reader is 6 to 10 points under Jev on the
+same generic rubric and the GEPA rubric does not transfer to it.
+
+Commands: `joke-pref jester-evaluate`, `joke-pref jester-optimize`,
+`joke-pref judge`, `scripts/jester_phase2_report.py`. Per-user runs in
+`results/jester/personal/u<id>/` (gitignored).
 
 ## First action for the next session
 
-Read `PLAN.md`. Phase 2 is next: Jev + GEPA per user on the 60 selected
-users. The pieces exist: `jester.user_items` gives the groups of 5 jokes as
-`LabeledPremise`, `runs.optimize` runs GEPA, `jester_eval.evaluate_rubric`
-scores a rubric for all users. Add a `jester-optimize` command and a driver
-over the 60 users, with the cross-user and shuffled-label controls. Then
-Phase 3, DeepSeek Flash as the judge.
+`PLAN.md` lists candidates for the next chunk. Naveen picks. The write-up
+(candidate 1) needs no more model calls. Candidate 2 (why typical users
+gain nothing) and candidate 5 (a faster writer) are the cheap experiments.
 
 ## Things not to redo
 
@@ -106,6 +110,6 @@ Phase 3, DeepSeek Flash as the judge.
   1.33 on a 0-2 scale. `results/probe/`.
 - GEPA plumbing bugs: fixed and tested (`bbff01e`, `f8c01ff`).
 - The label server, the dataset build, the metric, the Jester loaders and
-  evaluation: all tested, 51 tests.
+  evaluation, the per-user GEPA run and the LLM judge: all tested, 56 tests.
 - Naveen's own labeling is complete. A relabel pass for an intra-rater ceiling
   was proposed and not yet asked for.

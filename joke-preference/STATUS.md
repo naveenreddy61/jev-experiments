@@ -1,14 +1,14 @@
 # STATUS: joke-preference
 
-Snapshot on 2026-09-20, after Phase 1 of the Jester plan.
+Snapshot on 2026-09-20, after the Jester chunk (all three phases).
 
 ## What operates correctly
 
 - `uv sync` builds the venv. `typesafe_sdk` 0.7.0 needs the per-package
   `exclude-newer` override in `pyproject.toml`; do not remove it.
-- 51 offline tests pass: `PYTHONPATH=src .venv/bin/python -m unittest discover -s tests -t .`
+- 56 offline tests pass: `PYTHONPATH=src .venv/bin/python -m unittest discover -s tests -t .`
 - CLI `joke-pref` (see README): `label`, `stats`, `split`, `probe`,
-  `evaluate`, `optimize`, `jester-evaluate`. Keys `JEV_API_KEY` and `DEEPSEEK_API_KEY` are set
+  `evaluate`, `optimize`, `jester-evaluate`, `jester-optimize`, `judge`. Keys `JEV_API_KEY` and `DEEPSEEK_API_KEY` are set
   in Naveen's shell.
 - Label server: `joke-pref label` on http://127.0.0.1:8765. One instance was
   still running in the background at the end of the session (log at
@@ -130,11 +130,39 @@ selected 60: a-generic 0.604 / 0.553, seed 0.587 / 0.532, crowd rubric
 0.599 / 0.537, crowd mean 0.650 / 0.524, kNN 0.710 / 0.734. 300 Jev calls,
 no invalid result, 0.5 to 0.7 s per call.
 
+## Jester Phase 2 and 3 (done 2026-09-20)
+
+`src/joke_pref/jester_runs.py` runs GEPA for one user and evaluates the
+best rubric for all users (cross-user control for free).
+`src/joke_pref/llm_judge.py` is DeepSeek Flash as the rubric reader (one
+word or 0-100, with or without the reasoning trace).
+`scripts/jester_phase2_report.py` prints the paired statistics.
+
+Numbers in `docs/jester-results.md`. Median concordance, 60 users: crowd
+0.524, generic 0.553, personal 0.618, cross-user 0.509, kNN 0.734. The 40
+atypical users: generic 0.529, personal 0.664 (+0.111, 30/10, p = 0.002),
+kNN 0.758. The 20 random users: -0.02. Null run 10 users: -0.05. Judge on
+Jester with a-generic: 0.500 to 0.543 against Jev 0.604. Judge on Naveen's
+split: thinking judge 0.666 with generic, 0.634 with the GEPA rubric; Jev
+0.687 with the GEPA rubric.
+
+Runs: `results/jester/personal/` (60 users, budget 300), `results/jester/null/`
+(10 users), `results/jester/judge-*/`, `results/naveen/judge-*/`,
+`results/jester/pilot-u79-budget600/` (stopped pilot, timing only). Caches:
+`results/jev-cache*.sqlite` (one per shard), `results/judge-cache.sqlite`.
+Cost of the chunk: about 60,000 Jev calls, 1,400 DeepSeek rewrites with
+reasoning (about 20 million reasoning tokens), 1,400 judge calls. Three
+transient connection resets from DeepSeek, all retried by GEPA.
+
+Known limits: 40 test jokes per user, so a single user's number moves by
+several points; the selection of the 40 atypical users is on train jokes
+only, but they are still a selected tail; DeepSeek Flash with reasoning is
+slow as the writer (21 min per user).
+
 ## Planning files
 
-- `PLAN.md`: the active chunk, the Jester plan fixed by Naveen on
-  2026-09-19. Phase 1 done; Phase 2 (Jev + GEPA per user) and Phase 3
-  (DeepSeek Flash judge) open.
+- `PLAN.md`: the Jester chunk is closed; it lists candidates for the next
+  chunk for Naveen to pick.
 - `HANDOFF.md`: session summary and first action.
 - The three research reports, the Jester work and these files were
   committed at the end of the session. `data/labels/` stays uncommitted.
