@@ -1,4 +1,5 @@
-"""Command line: label, stats, split, probe, evaluate, optimize, jester-evaluate.
+"""Command line: label, stats, split, probe, evaluate, optimize, jester-evaluate,
+jester-optimize, judge.
 
 Paths are relative to the project directory. Run from `joke-preference/`.
 """
@@ -238,9 +239,9 @@ def cmd_optimize(args) -> int:
     return 0
 
 
-def cmd_jester_evaluate(args) -> int:
-    """Score the 100 Jester jokes with one rubric and report per-user
-    concordance against tercile labels, next to the crowd and kNN ceilings."""
+def _jester_eval_and_write(scorer, criteria, args, out: Path, extra_meta: dict) -> dict:
+    """Score the 100 Jester jokes with `scorer`, evaluate for every user,
+    write `jokes.jsonl`, `users.csv`, `criteria.json`, `summary.json`."""
     import numpy as np
 
     from joke_pref.criteria import save_criteria
@@ -249,15 +250,11 @@ def cmd_jester_evaluate(args) -> int:
 
     jokes = load_jokes()
     ratings = complete_users(load_ratings())
-    criteria = load_criteria(args.criteria)
-    scorer = _scorer(args)
     t0 = datetime.now(timezone.utc)
     results = scorer.score_many([j.text for j in jokes], criteria)
     ev = evaluate_rubric(results, jokes, ratings, seed=args.seed, k=args.k)
     chosen = selected_users(args.user_stats, seed=args.seed)
     mask = user_mask(ratings, chosen)
-    name = args.name or f"{Path(args.criteria).stem}-{_stamp()}"
-    out = Path(args.results) / "jester" / name
     out.mkdir(parents=True, exist_ok=True)
     with open(out / "jokes.jsonl", "w", encoding="utf-8") as fh:
         for j, r in zip(jokes, results):
@@ -265,14 +262,14 @@ def cmd_jester_evaluate(args) -> int:
     write_user_table(out / "users.csv", ev)
     save_criteria(criteria, out / "criteria.json")
     summary = {
-        "criteria_file": str(args.criteria),
+        **extra_meta,
         "seed": args.seed,
         "k": args.k,
         "n_jokes": len(jokes),
         "test_joke_ids": ev.test_ids,
         "invalid_results": ev.n_invalid,
         "model": scorer.model,
-        "jev_calls": scorer.calls,
+        "calls": scorer.calls,
         "mean_latency_ms": float(np.mean([r.latency_ms for r in results])),
         "created_at": t0.isoformat(timespec="seconds"),
         "all_users": ev.table(),
@@ -289,6 +286,112 @@ def cmd_jester_evaluate(args) -> int:
             f"beats crowd {t['rubric_beats_crowd_share']:.2f}"
         )
     print(f"-> {out}")
+    return summary
+
+
+def cmd_jester_evaluate(args) -> int:
+    """Score the 100 Jester jokes with one rubric and report per-user
+    concordance against tercile labels, next to the crowd and kNN ceilings."""
+    criteria = load_criteria(args.criteria)
+    scorer = _scorer(args)
+    name = args.name or f"{Path(args.criteria).stem}-{_stamp()}"
+    _jester_eval_and_write(scorer, criteria, args, Path(args.results) / "jester" / name, {"criteria_file": str(args.criteria)})
+    return 0
+
+
+def cmd_judge(args) -> int:
+    """DeepSeek Flash as the rubric reader, on Jester or on one person's split."""
+    from joke_pref.llm_judge import LLMJudge
+    from joke_pref.scorer import ScoreCache
+
+    cache = None if args.no_cache else ScoreCache(Path(args.results) / "judge-cache.sqlite")
+    judge = LLMJudge(thinking=args.thinking, answer=args.answer, timeout=args.timeout, max_workers=args.workers, cache=cache)
+    criteria = load_criteria(args.criteria)
+    tag = ("think" if args.thinking else "nothink") + "-" + args.answer
+    if args.jester:
+        name = args.name or f"judge-{tag}-{Path(args.criteria).stem}"
+        _jester_eval_and_write(
+            judge, criteria, args, Path(args.results) / "jester" / name,
+            {"criteria_file": str(args.criteria), "judge": "deepseek", "usage": None},
+        )
+        summary_path = Path(args.results) / "jester" / name / "summary.json"
+        summary = json.loads(summary_path.read_text())
+        summary["usage"] = judge.usage()
+        summary_path.write_text(json.dumps(summary, indent=2) + "\n")
+        return 0
+    from joke_pref.runs import evaluate, write_evaluation
+
+    items, _ = _load_user_items(args)
+    splits = _splits(items, args.split_seed)
+    chosen = select(items, splits.ids(args.split))
+    rows, evals, summary = evaluate(judge, chosen, criteria, w_rank=args.w_rank)
+    name = args.name or f"judge-{tag}-{Path(args.criteria).stem}-{args.split}"
+    out = write_evaluation(
+        Path(args.results) / args.user / name,
+        rows=rows,
+        summary=summary,
+        criteria=criteria,
+        meta={
+            "user": args.user, "split": args.split, "seed": args.split_seed, "criteria_file": str(args.criteria),
+            "judge": "deepseek", **judge.usage(),
+            "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        },
+    )
+    print(json.dumps({k: summary.get(k) for k in ("premise_score", "concordance", "agreement", "exact_accuracy", "spearman", "top1_hit_rate")}, indent=2))
+    print(json.dumps(judge.usage()))
+    print(f"-> {out}")
+    return 0
+
+
+def cmd_jester_optimize(args) -> int:
+    """GEPA per Jester user. Each user: 12 train groups of 5 jokes (9 train,
+    3 val), best rubric scored on all 100 jokes and evaluated for every user,
+    one row appended to `<results>/jester/<name>/users.csv`."""
+    from joke_pref.jester import complete_users, load_jokes, load_ratings
+    from joke_pref.jester_eval import selected_users
+    from joke_pref.jester_runs import References, append_row, done_users, load_generic, optimize_user
+    from joke_pref.reflection import DeepSeekReflectionLM
+
+    jokes = load_jokes()
+    ratings = complete_users(load_ratings())
+    selected = selected_users(args.user_stats, seed=args.seed)
+    if args.user:
+        users = [int(u) for u in args.user]
+    else:
+        i, n = (int(v) for v in args.shard.split("/"))
+        users = [u for k, u in enumerate(selected) if k % n == i]
+    out = Path(args.results) / "jester" / args.name
+    out.mkdir(parents=True, exist_ok=True)
+    table = out / "users.csv"
+    todo = [u for u in users if u not in done_users(table)]
+    print(f"{len(todo)} users to run ({len(users) - len(todo)} done already) -> {out}", flush=True)
+    seed_criteria = load_criteria(args.criteria)
+    generic = load_generic(args.baseline)
+    scorer = _scorer(args, cache_name=args.cache_name)
+    references = References.build(ratings, seed=args.seed, k=args.k)
+    log = lambda msg: print(msg, flush=True)  # noqa: E731
+    for u in todo:
+        run_dir = out / f"u{u}"
+        reflection = DeepSeekReflectionLM(log_path=run_dir / "reflection.jsonl")
+        row, _ = optimize_user(
+            scorer,
+            ratings=ratings,
+            jokes=jokes,
+            user_id=u,
+            seed_criteria=seed_criteria,
+            reflection_lm=reflection,
+            run_dir=run_dir,
+            references=references,
+            selected=selected,
+            generic=generic,
+            max_metric_calls=args.max_metric_calls,
+            reflection_minibatch_size=args.minibatch,
+            seed=args.seed,
+            null_run=args.shuffle_labels,
+            log=log,
+        )
+        append_row(table, row)
+    print(f"-> {table}")
     return 0
 
 
@@ -361,6 +464,40 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--name")
     jev_args(s)
     s.set_defaults(fn=cmd_jester_evaluate)
+
+    s = sub.add_parser("jester-optimize", help="GEPA rubric per Jester user, with the cross-user control")
+    s.add_argument("--user", action="append", help="one user id; repeatable. Default: the selected users of --shard")
+    s.add_argument("--shard", default="0/1", help="i/n: run every n-th selected user starting at i")
+    s.add_argument("--criteria", default="criteria/probe/a-generic.json", help="seed rubric for GEPA")
+    s.add_argument("--baseline", default="results/jester/generic-a-generic", help="jester-evaluate run for the generic column")
+    s.add_argument("--max-metric-calls", type=int, default=600)
+    s.add_argument("--minibatch", type=int, default=6, help="groups per reflection step")
+    s.add_argument("--shuffle-labels", action="store_true", help="null check: shuffle labels within each train/val group")
+    s.add_argument("--seed", type=int, default=20260919)
+    s.add_argument("--k", type=int, default=80)
+    s.add_argument("--user-stats", default="data/jester/user_stats.csv")
+    s.add_argument("--cache-name", default="jev-cache.sqlite", help="sqlite file under --results; use one per parallel process")
+    s.add_argument("--name", default="personal")
+    jev_args(s)
+    s.set_defaults(fn=cmd_jester_optimize)
+
+    s = sub.add_parser("judge", help="DeepSeek Flash reads the rubric: Jester (--jester) or one person's split (--user)")
+    s.add_argument("--criteria", required=True)
+    s.add_argument("--jester", action="store_true")
+    s.add_argument("--user", help="label user for the personal split")
+    s.add_argument("--split", default="test", choices=("train", "val", "test", "all"))
+    s.add_argument("--split-seed", type=int, default=0, help="premise split seed for --user")
+    s.add_argument("--w-rank", type=float, default=0.6)
+    s.add_argument("--thinking", action="store_true", help="let the judge reason before it answers")
+    s.add_argument("--answer", default="level", choices=("level", "score"), help="one word, or an integer 0-100")
+    s.add_argument("--seed", type=int, default=20260919, help="Jester item split seed")
+    s.add_argument("--k", type=int, default=80)
+    s.add_argument("--user-stats", default="data/jester/user_stats.csv")
+    s.add_argument("--name")
+    s.add_argument("--timeout", type=float, default=120.0)
+    s.add_argument("--workers", type=int, default=8)
+    s.add_argument("--no-cache", action="store_true")
+    s.set_defaults(fn=cmd_judge)
     return p
 
 
