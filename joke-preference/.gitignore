@@ -9,3 +9,5 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .DS_Store
+# Jester raw downloads
+data/jester/raw/

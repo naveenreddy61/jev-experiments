@@ -11,6 +11,8 @@ requires-python = ">=3.12"
 dependencies = [
     "typesafe_sdk>=0.7",
     "gepa>=0.1.4",
+    "xlrd>=2.0.2",
+    "numpy>=2.5.3",
 ]
 
 [project.scripts]
