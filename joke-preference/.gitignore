@@ -1,0 +1,11 @@
+# personal preference labels stay local until the owner decides otherwise
+data/labels/
+# raw model outputs and optimizer runs
+results/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+.ruff_cache/
+.DS_Store

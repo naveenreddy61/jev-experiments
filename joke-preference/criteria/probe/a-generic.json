@@ -1,0 +1,4 @@
+{
+  "instructions": "How much will this reader enjoy this joke?",
+  "levels": ["Not funny.", "Somewhat funny.", "Very funny."]
+}

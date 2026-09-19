@@ -1,0 +1,8 @@
+{
+  "instructions": "How much will this reader enjoy this joke?",
+  "levels": [
+    "The joke has no wordplay. It relies on absurd images, dark themes, or plain observation.",
+    "The joke has mild wordplay or a familiar pun the reader has heard before.",
+    "The joke turns on a fresh pun or double meaning that clicks only on the second read."
+  ]
+}

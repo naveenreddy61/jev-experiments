@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "joke-pref"
+version = "0.1.0"
+description = "Personal joke recommender from Jev Score criteria optimized with GEPA"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "typesafe_sdk>=0.7",
+    "gepa>=0.1.4",
+]
+
+[project.scripts]
+joke-pref = "joke_pref.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.uv]
+exclude-newer = "7 days"
+# typesafe-sdk 0.7 is a day old; let it through the freshness gate.
+exclude-newer-package = { typesafe-sdk = "2026-09-20T00:00:00Z" }

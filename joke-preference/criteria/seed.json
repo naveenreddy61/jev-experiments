@@ -1,0 +1,8 @@
+{
+  "instructions": "How much will this reader enjoy this joke?",
+  "levels": [
+    "The punchline is predictable, flat, or tries too hard. The reader sees it coming or does not react.",
+    "The punchline works. The reader smiles or nods; it is a solid joke but not memorable.",
+    "The punchline surprises the reader with a sharp twist, clever wordplay, or an absurd image that lands hard. The reader laughs and wants to share it."
+  ]
+}
