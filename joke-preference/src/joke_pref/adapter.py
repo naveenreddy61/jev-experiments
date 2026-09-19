@@ -36,6 +36,10 @@ class Trajectory:
 
 
 class JokeCriteriaAdapter:
+    # GEPA reads this attribute on every reflection step. None selects
+    # GEPA's default proposer, which uses `reflection_prompt_template`.
+    propose_new_texts = None
+
     def __init__(
         self,
         scorer: JevScorer,

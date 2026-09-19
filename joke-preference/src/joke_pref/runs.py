@@ -110,7 +110,7 @@ def optimize(
         run_dir=str(run_dir),
         seed=seed,
         track_best_outputs=False,
-        display_progress_bar=True,
+        display_progress_bar=False,
         raise_on_exception=True,
     )
     elapsed = time.perf_counter() - t0
@@ -133,4 +133,9 @@ def optimize(
         json.dump(summary, fh, indent=2)
         fh.write("\n")
     log(f"best candidate {result.best_idx} of {result.num_candidates}; {result.total_metric_calls} metric calls; {elapsed:.0f}s")
+    if result.num_candidates <= 1:
+        log(
+            "WARNING: GEPA produced no new candidate. Check run_log.txt in the run dir for "
+            "reflection errors; the result equals the seed."
+        )
     return best, result
