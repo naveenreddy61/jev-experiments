@@ -250,3 +250,18 @@ def make_splits(
 def select(items: list[LabeledPremise], ids: Iterable[str]) -> list[LabeledPremise]:
     wanted = set(ids)
     return [it for it in items if it.id in wanted]
+
+
+def shuffle_labels(items: list[LabeledPremise], seed: int = 0) -> list[LabeledPremise]:
+    """Permute the labels inside each premise. The label counts per premise
+    stay the same, but the link between punchline and label is broken. An
+    optimizer trained on this must show no gain on real labels; if it does,
+    the pipeline leaks."""
+    rng = random.Random(seed)
+    out: list[LabeledPremise] = []
+    for item in items:
+        ids = list(item.labels)
+        values = [item.labels[i] for i in ids]
+        rng.shuffle(values)
+        out.append(LabeledPremise(item.premise, dict(zip(ids, values))))
+    return out

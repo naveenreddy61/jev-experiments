@@ -82,8 +82,9 @@ def optimize(
     max_metric_calls: int,
     run_dir: str | Path,
     seed: int = 0,
-    reflection_minibatch_size: int = 4,
+    reflection_minibatch_size: int = 12,
     w_rank: float = W_RANK,
+    joint: bool = True,
     log: Callable[[str], None] = print,
 ) -> tuple[Criteria, Any]:
     """Run gepa.optimize over the three level descriptions.
@@ -94,7 +95,12 @@ def optimize(
 
     run_dir = Path(run_dir)
     run_dir.mkdir(parents=True, exist_ok=True)
-    adapter = JokeCriteriaAdapter(scorer, seed_criteria.instructions, w_rank=w_rank)
+    adapter = JokeCriteriaAdapter(
+        scorer,
+        seed_criteria.instructions,
+        w_rank=w_rank,
+        reflection_lm=reflection_lm if joint else None,
+    )
     t0 = time.perf_counter()
     result = gepa.optimize(
         seed_candidate=seed_criteria.to_candidate(),
@@ -102,10 +108,10 @@ def optimize(
         valset=val,
         adapter=adapter,
         reflection_lm=reflection_lm,
-        reflection_prompt_template=reflection_prompt_templates(),
+        reflection_prompt_template=None if joint else reflection_prompt_templates(),
         reflection_minibatch_size=reflection_minibatch_size,
         candidate_selection_strategy="pareto",
-        module_selector="round_robin",
+        module_selector="all" if joint else "round_robin",
         max_metric_calls=max_metric_calls,
         run_dir=str(run_dir),
         seed=seed,
@@ -124,6 +130,10 @@ def optimize(
         "num_full_val_evals": result.num_full_val_evals,
         "best_idx": result.best_idx,
         "val_aggregate_scores": list(getattr(result, "val_aggregate_scores", []) or []),
+        "joint_reflection": joint,
+        "reflection_minibatch_size": reflection_minibatch_size,
+        "w_rank": w_rank,
+        "proposal_parse_failures": adapter.proposal_failures,
         "jev_calls": scorer.calls,
         "reflection_calls": getattr(reflection_lm, "calls", None),
         "reflection_input_tokens": getattr(reflection_lm, "input_tokens", None),

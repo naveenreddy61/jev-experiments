@@ -22,6 +22,7 @@ from joke_pref.data import (
     load_premises,
     make_splits,
     select,
+    shuffle_labels,
 )
 
 DEFAULT_PREMISES = "data/premises.jsonl"
@@ -193,6 +194,11 @@ def cmd_optimize(args) -> int:
     items, _ = _load_user_items(args)
     splits = _splits(items, args.seed)
     train, val, test = (select(items, splits.ids(n)) for n in ("train", "val", "test"))
+    if args.shuffle_labels:
+        # Null check: break the punchline-label link in train and val only.
+        train = shuffle_labels(train, seed=args.seed)
+        val = shuffle_labels(val, seed=args.seed + 1)
+        print("NULL RUN: labels shuffled within each train/val premise; test keeps real labels")
     if len(train) < 5 or len(val) < 3:
         sys.exit(f"too few labeled premises: {len(train)} train / {len(val)} val")
     seed_criteria = load_criteria(args.criteria)
@@ -211,6 +217,7 @@ def cmd_optimize(args) -> int:
         seed=args.seed,
         reflection_minibatch_size=args.minibatch,
         w_rank=args.w_rank,
+        joint=not args.per_level,
     )
     print("best criteria:")
     print(json.dumps(best.as_dict(), indent=2, ensure_ascii=False))
@@ -283,9 +290,11 @@ def build_parser() -> argparse.ArgumentParser:
     user_args(s)
     s.add_argument("--criteria", default=DEFAULT_SEED_CRITERIA)
     s.add_argument("--max-metric-calls", type=int, default=400)
-    s.add_argument("--minibatch", type=int, default=4)
+    s.add_argument("--minibatch", type=int, default=12, help="premises per reflection step")
     s.add_argument("--repeats", type=int, default=1)
     s.add_argument("--w-rank", type=float, default=0.6)
+    s.add_argument("--per-level", action="store_true", help="GEPA's default proposer: one level per step (default: all three levels in one call)")
+    s.add_argument("--shuffle-labels", action="store_true", help="null check: shuffle labels within each train/val premise")
     s.add_argument("--name")
     jev_args(s)
     s.set_defaults(fn=cmd_optimize)

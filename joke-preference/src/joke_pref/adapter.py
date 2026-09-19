@@ -10,6 +10,8 @@ See https://github.com/gepa-ai/gepa, `gepa.core.adapter.GEPAAdapter`.
 
 from __future__ import annotations
 
+import json
+import re
 from dataclasses import dataclass
 from typing import Any, Mapping, Sequence
 
@@ -36,20 +38,25 @@ class Trajectory:
 
 
 class JokeCriteriaAdapter:
-    # GEPA reads this attribute on every reflection step. None selects
-    # GEPA's default proposer, which uses `reflection_prompt_template`.
-    propose_new_texts = None
-
     def __init__(
         self,
         scorer: JevScorer,
         instructions: str,
         *,
         w_rank: float = W_RANK,
+        reflection_lm: Any = None,
     ):
         self.scorer = scorer
         self.instructions = instructions
         self.w_rank = w_rank
+        # When a reflection LM is given, the adapter owns the proposal step:
+        # one call rewrites all three levels together (see `_propose_joint`).
+        # Otherwise GEPA's default per-component proposer runs with
+        # `reflection_prompt_templates()`. GEPA reads this attribute on every
+        # reflection step, so it must exist even when it is None.
+        self.reflection_lm = reflection_lm
+        self.propose_new_texts = self._propose_joint if reflection_lm is not None else None
+        self.proposal_failures = 0
 
     # --- GEPAAdapter.evaluate ---------------------------------------------
 
@@ -173,6 +180,95 @@ class JokeCriteriaAdapter:
         summary += f", mean probability on the reader's level {traj.eval.agreement:.2f}."
         lines.append(summary)
         return "\n".join(lines)
+
+    # --- joint proposal: all three levels in one reflection call -----------
+
+    def _propose_joint(
+        self,
+        candidate: dict[str, str],
+        reflective_dataset: Mapping[str, Sequence[Mapping[str, Any]]],
+        components_to_update: list[str],
+    ) -> dict[str, str]:
+        """Rewrite every level in one call so the levels stay mutually exclusive.
+
+        The reflective records are the same for every component (one per
+        premise), so the prompt uses the records of the first component and
+        shows the whole current rubric. On a parse failure the candidate is
+        returned unchanged and GEPA skips it as "not better".
+        """
+        records = reflective_dataset[components_to_update[0]]
+        prompt = joint_reflection_prompt(candidate, records)
+        text = self.reflection_lm(prompt)
+        proposal = parse_joint_proposal(text)
+        if proposal is None:
+            self.proposal_failures += 1
+            return dict(candidate)
+        out = dict(candidate)
+        for component in components_to_update:
+            if component in proposal:
+                out[component] = proposal[component]
+        return out
+
+
+def joint_reflection_prompt(candidate: dict[str, str], records: Sequence[Mapping[str, Any]]) -> str:
+    rubric = "\n\n".join(f"[{name}]\n{candidate[comp]}" for comp, name in zip(COMPONENTS, LABELS))
+    blocks = []
+    for i, rec in enumerate(records, 1):
+        inputs = rec["Inputs"]
+        lines = [f"Premise {i}: {inputs['setup']}"]
+        for pl in inputs["punchlines"]:
+            gen = rec["Generated Outputs"].get(pl["punchline"], {})
+            probs = ", ".join(f"{k[2:]} {v:.2f}" for k, v in gen.items() if k.startswith("p_"))
+            lines.append(f'  - "{pl["punchline"]}"  reader: {pl["reader_label"]}  model: {probs or gen}')
+        lines.append("  feedback:")
+        lines.extend("    " + ln for ln in str(rec["Feedback"]).splitlines())
+        blocks.append("\n".join(lines))
+    side_info = "\n\n".join(blocks)
+    n = len(records)
+    return f"""A fast scoring model rates jokes for one specific reader. It receives one full joke (premise and punchline) and a rubric with three levels: bad, good, great. Each level is a short description of a situation. The model judges each level on its own against the joke. It never sees the level's number or the other levels, so words such as "better than", "moderately", or numbers mean nothing to it. Describe situations and concrete features, not degrees.
+
+The current rubric is:
+```
+{rubric}
+```
+
+Below are {n} premises with their punchlines, the reader's own label for each punchline, the model's probabilities under the current rubric, and feedback on each:
+```
+{side_info}
+```
+
+Rewrite all three level descriptions together so that, for each punchline, the model's probability rises on the level the reader chose and falls on the other two. Work from the whole set of {n} premises, not from one or two jokes: name a feature only when it separates the reader's labels across several premises. Look for what the reader's bad, good and great jokes have in common: style (pun, absurdist, dark, deadpan, anti-joke, misdirection, wordplay, hyperbole, callback, meta, observational, self-deprecating), mechanism, subject, tone, length, predictability. The three descriptions must not overlap: a feature that marks one level must not appear in another. Keep what already works in the current rubric. Give the great level a real, specific description, since the reader uses it rarely and the model tends to miss it.
+
+Each description may be a plain paragraph, or an object with two fields: "what" (the description) and "examples" (a list of 2 to 4 short traits or example lines). Keep each under 150 words. Do not name the reader. Do not refer to other levels by number.
+
+Answer with one JSON object and nothing else, inside a ``` block:
+{{"level_bad": <string or object>, "level_good": <string or object>, "level_great": <string or object>}}"""
+
+
+def parse_joint_proposal(text: str) -> dict[str, str] | None:
+    """Extract the JSON object from the reflection answer. Values become
+    candidate strings: a string as is, an object as indented JSON."""
+    m = re.search(r"```(?:json)?\s*(\{.*\})\s*```", text, re.S)
+    raw = m.group(1) if m else text.strip()
+    if not m:
+        start, end = raw.find("{"), raw.rfind("}")
+        if start < 0 or end < 0:
+            return None
+        raw = raw[start : end + 1]
+    try:
+        obj = json.loads(raw)
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(obj, dict):
+        return None
+    out: dict[str, str] = {}
+    for comp in COMPONENTS:
+        val = obj.get(comp)
+        if isinstance(val, str) and val.strip():
+            out[comp] = val.strip()
+        elif isinstance(val, dict) and val:
+            out[comp] = json.dumps(val, ensure_ascii=False, indent=2)
+    return out or None
 
 
 def reflection_prompt_templates() -> dict[str, str]:

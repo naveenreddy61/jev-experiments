@@ -42,6 +42,14 @@ uv run joke-pref evaluate --user naveen --split test     # seed criteria on test
 uv run joke-pref optimize --user naveen --max-metric-calls 400
 ```
 
+By default `optimize` shows 12 premises per reflection step and asks DeepSeek
+to rewrite all three levels in one call, so the levels stay distinct.
+`--per-level` uses GEPA's own one-level-per-step proposer instead.
+`--shuffle-labels` is the null check: it shuffles the labels inside each
+train and val premise, so any test gain it shows is generic joke quality,
+not personal taste. Compare a real run against it and against
+`criteria/probe/a-generic.json`, the non-personal default.
+
 `optimize` writes the run to `results/<user>/gepa-<stamp>/` with the best
 criteria, the reflection log, and a test evaluation of the seed and the best
 criteria side by side. Jev answers are cached in `results/jev-cache.sqlite`,
