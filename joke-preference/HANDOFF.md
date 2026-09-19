@@ -82,37 +82,30 @@ rubric beats generic on a paired test across users, cross-user control
 flat, and closes a good share of the gap to kNN, with no ratings read at
 inference.
 
+## Phase 1 done (2026-09-20)
+
+`joke-pref jester-evaluate` scores the 100 Jester jokes with one rubric and
+reports per-user concordance for all 7,200 users and for the 60 selected
+users, next to crowd and kNN on the same tercile labels. Result in
+`docs/jester-results.md`: the plain three-word rubric gives 0.604 (all) and
+0.553 (selected 60); crowd 0.650 / 0.524; kNN 0.710 / 0.734. Three generic
+rubrics tried, the plain one is best.
+
 ## First action for the next session
 
-Read `PLAN.md`. It holds the three-phase Jester plan Naveen fixed:
-(1) Jev with generic rubrics, (2) Jev + GEPA per user, (3) DeepSeek Flash as
-judge for the cost comparison. Start with Phase 1 work items: the
-`user_items` grouping in `src/joke_pref/jester.py`, the `jester-evaluate`
-CLI command, and the three generic rubrics. Phase 1 is 300 Jev calls in
-total, because Jev scores jokes, not users. Its outputs should be
-   `scripts/fetch_jester.py`, `scripts/jester_signal.py`,
-   `src/joke_pref/jester.py`, `tests/test_jester.py`, `data/jester/`
-   (raw gitignored, `jokes.jsonl`, `ratings.csv.gz`, `user_stats.csv`,
-   `README.md` with license text) and `docs/jester-signal.md`. If
-   `docs/jester-signal.md` does not exist, the agent did not finish; run
-   `.venv/bin/python scripts/fetch_jester.py` then `scripts/jester_signal.py`,
-   or redo the work from the brief in `STATUS.md`.
-2. Read `docs/jester-signal.md`. The key number is the gap between
-   collaborative-filtering concordance and crowd-mean concordance per user.
-   If few users have a gap of 0.20 or more, say so to Naveen before any Jev
-   run; the target may not be available in the data.
-3. If the gap exists: build the Jester arm of the pipeline (a `LabeledPremise`
-   equivalent per user with the 100 jokes as items, terciles or quintiles of
-   the user's own ratings as levels, the fixed item split), then run generic
-   rubric vs GEPA rubric on 20 to 50 users with the controls above.
-4. Commit the three research reports and the Jester work. Do not commit
-   `data/labels/` (Naveen's personal labels) until he decides.
+Read `PLAN.md`. Phase 2 is next: Jev + GEPA per user on the 60 selected
+users. The pieces exist: `jester.user_items` gives the groups of 5 jokes as
+`LabeledPremise`, `runs.optimize` runs GEPA, `jester_eval.evaluate_rubric`
+scores a rubric for all users. Add a `jester-optimize` command and a driver
+over the 60 users, with the cross-user and shuffled-label controls. Then
+Phase 3, DeepSeek Flash as the judge.
 
 ## Things not to redo
 
 - The go/no-go probe (does criteria text move Jev at all): passed, mean spread
   1.33 on a 0-2 scale. `results/probe/`.
 - GEPA plumbing bugs: fixed and tested (`bbff01e`, `f8c01ff`).
-- The label server, the dataset build, the metric: all tested, 35 tests.
+- The label server, the dataset build, the metric, the Jester loaders and
+  evaluation: all tested, 51 tests.
 - Naveen's own labeling is complete. A relabel pass for an intra-rater ceiling
   was proposed and not yet asked for.

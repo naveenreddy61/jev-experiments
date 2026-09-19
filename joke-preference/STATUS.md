@@ -1,14 +1,14 @@
 # STATUS: joke-preference
 
-Snapshot on 2026-09-19, end of the second session on this experiment.
+Snapshot on 2026-09-20, after Phase 1 of the Jester plan.
 
 ## What operates correctly
 
 - `uv sync` builds the venv. `typesafe_sdk` 0.7.0 needs the per-package
   `exclude-newer` override in `pyproject.toml`; do not remove it.
-- 43 offline tests pass: `PYTHONPATH=src .venv/bin/python -m unittest discover -s tests -t .`
+- 51 offline tests pass: `PYTHONPATH=src .venv/bin/python -m unittest discover -s tests -t .`
 - CLI `joke-pref` (see README): `label`, `stats`, `split`, `probe`,
-  `evaluate`, `optimize`. Keys `JEV_API_KEY` and `DEEPSEEK_API_KEY` are set
+  `evaluate`, `optimize`, `jester-evaluate`. Keys `JEV_API_KEY` and `DEEPSEEK_API_KEY` are set
   in Naveen's shell.
 - Label server: `joke-pref label` on http://127.0.0.1:8765. One instance was
   still running in the background at the end of the session (log at
@@ -115,11 +115,26 @@ users have a CF-minus-crowd gap of 0.20 or more, per-joke variance, tercile
 and quintile class balance, and a recommended protocol. Candidate atypical
 users go to `data/jester/user_stats.csv`.
 
+## Jester Phase 1 (done 2026-09-20)
+
+`src/joke_pref/jester_eval.py` holds the vectorized metric, the tercile
+labels, the crowd / kNN / Eigentaste predictors (moved out of
+`scripts/jester_signal.py`, which imports them now), the 60-user selection
+and `evaluate_rubric`. `jester.user_items` builds the GEPA groups.
+`criteria/jester/crowd.json` is the crowd-informed rubric, written by hand
+from the ten best and ten worst train jokes by mean rating.
+
+Results in `results/jester/generic-{a-generic,seed,crowd}/` and
+`docs/jester-results.md`. Median concordance on tercile truth, all users /
+selected 60: a-generic 0.604 / 0.553, seed 0.587 / 0.532, crowd rubric
+0.599 / 0.537, crowd mean 0.650 / 0.524, kNN 0.710 / 0.734. 300 Jev calls,
+no invalid result, 0.5 to 0.7 s per call.
+
 ## Planning files
 
-- `PLAN.md`: the active chunk, the three-phase Jester plan (generic Jev
-  result, Jev + GEPA per user, DeepSeek Flash judge), fixed by Naveen on
-  2026-09-19.
+- `PLAN.md`: the active chunk, the Jester plan fixed by Naveen on
+  2026-09-19. Phase 1 done; Phase 2 (Jev + GEPA per user) and Phase 3
+  (DeepSeek Flash judge) open.
 - `HANDOFF.md`: session summary and first action.
 - The three research reports, the Jester work and these files were
   committed at the end of the session. `data/labels/` stays uncommitted.

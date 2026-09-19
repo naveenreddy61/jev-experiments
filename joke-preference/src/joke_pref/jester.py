@@ -10,6 +10,9 @@ Build the files first:
 - `load_ratings()` gives a dense `float` matrix with `nan` for a missing
   rating, plus the user ids for the rows and the joke ids for the columns.
 - `complete_users()` gives the row mask for users who rated all 100 jokes.
+- `item_split()` gives the fixed train / test joke ids.
+- `user_items()` turns one user's ratings into `LabeledPremise` groups, so
+  the adapter, the metric and the GEPA loop work on Jester unchanged.
 
 Nothing here downloads anything.
 """
@@ -23,6 +26,8 @@ from pathlib import Path
 from typing import Iterable
 
 import numpy as np
+
+from joke_pref.data import LABELS, LabeledPremise, Premise, Punchline
 
 N_JOKES = 100
 GAUGE_JOKES = (5, 7, 8, 13, 15, 16, 17, 18, 19, 20)
@@ -134,3 +139,84 @@ def item_split(
     train = sorted(list(gauge) + shuffled[:n_train].tolist())
     test = sorted(shuffled[n_train:].tolist())
     return train, test
+
+
+def tercile_cuts(train_ratings: np.ndarray) -> tuple[float, float]:
+    """Cut points at the 33rd and 67th percentile of one user's train ratings."""
+    lo, hi = np.quantile(np.asarray(train_ratings, dtype=float), [1 / 3, 2 / 3])
+    return float(lo), float(hi)
+
+
+def tercile(rating: float, cuts: tuple[float, float]) -> int:
+    """Level index 0/1/2. A rating equal to a cut point goes to the level above."""
+    return int(np.searchsorted(np.array(cuts), rating, side="right"))
+
+
+def user_items(
+    ratings: Ratings,
+    jokes: Iterable[Joke],
+    user_id: int,
+    split: str,
+    *,
+    seed: int = 20260919,
+    group_size: int = 5,
+) -> list[LabeledPremise]:
+    """One user's jokes of a split as groups of `group_size`, each group a
+    `LabeledPremise` with an empty setup and one joke per punchline.
+
+    Levels are the user's own terciles of the **train** ratings. Test jokes
+    use the same cut points. The grouping is fixed by `seed` and `user_id`.
+    `split` is `train`, `test` or `all`.
+    """
+    text = {j.id: j.text for j in jokes}
+    row = np.flatnonzero(ratings.user_ids == user_id)
+    if row.size != 1:
+        raise KeyError(f"user {user_id} is not in this matrix")
+    x = ratings.matrix[int(row[0])]
+    train_ids, test_ids = item_split(seed)
+    cuts = tercile_cuts(x[ratings.columns(train_ids)])
+    if split == "train":
+        ids = list(train_ids)
+    elif split == "test":
+        ids = list(test_ids)
+    elif split == "all":
+        ids = list(train_ids) + list(test_ids)
+    else:
+        raise ValueError(f"unknown split {split!r}")
+    if any(np.isnan(x[ratings.columns(ids)])):
+        raise ValueError(f"user {user_id} has a missing rating in split {split!r}")
+    order = np.random.default_rng([seed, int(user_id)]).permutation(len(ids))
+    ids = [ids[i] for i in order]
+    out: list[LabeledPremise] = []
+    for g in range(0, len(ids), group_size):
+        members = ids[g : g + group_size]
+        if len(members) < 2:
+            # a lone joke has no pair; attach it to the previous group
+            out[-1] = _extend_group(out[-1], members, text, x, ratings, cuts)
+            continue
+        pid = f"jester-u{user_id}-{split}-g{g // group_size:02d}"
+        punchlines = tuple(
+            Punchline(id=f"{pid}.{i}", premise_id=pid, index=i, text=text[j], style=f"jester-{j}")
+            for i, j in enumerate(members)
+        )
+        premise = Premise(id=pid, premise="", format="jester", domain="jester", punchlines=punchlines)
+        labels = {
+            pl.id: LABELS[tercile(float(x[ratings.column(j)]), cuts)]
+            for pl, j in zip(punchlines, members)
+        }
+        out.append(LabeledPremise(premise=premise, labels=labels))
+    return out
+
+
+def _extend_group(item, members, text, x, ratings, cuts) -> LabeledPremise:
+    base = item.premise
+    start = len(base.punchlines)
+    extra = tuple(
+        Punchline(id=f"{base.id}.{start + i}", premise_id=base.id, text=text[j], index=start + i, style=f"jester-{j}")
+        for i, j in enumerate(members)
+    )
+    premise = Premise(id=base.id, premise="", format=base.format, domain=base.domain, punchlines=base.punchlines + extra)
+    labels = dict(item.labels)
+    for pl, j in zip(extra, members):
+        labels[pl.id] = LABELS[tercile(float(x[ratings.column(j)]), cuts)]
+    return LabeledPremise(premise=premise, labels=labels)

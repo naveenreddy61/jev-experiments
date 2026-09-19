@@ -27,9 +27,9 @@ rubric, (2) an optimized Jev + GEPA result, (3) a DeepSeek Flash benchmark.**
   (seeded). 60 users in total.
 - Levels per user: bad / good / great by that user's own terciles of the 60
   **train** ratings. Test jokes are binned with the same train cut points.
-- Per-user reference numbers already computed: crowd item-mean
-  concordance and kNN k=80 concordance on the 40 test jokes
-  (`user_stats.csv`).
+- Per-user reference numbers on the tercile truth: `crowd_concordance` and
+  `knn_concordance` in `results/jester/generic-a-generic/users.csv`. The
+  numbers in `user_stats.csv` are on the raw ratings and are lower.
 
 ## Metric
 
@@ -38,35 +38,16 @@ different tercile labels, ties 0.5 (same definition as `metric.py`). Report
 median and a paired test across the 60 users. Secondary: NMAE from the
 expected level mapped to the user's tercile midpoints; Spearman with the raw
 rating. Always show four columns per arm group: crowd, generic rubric,
-personal rubric, kNN.
+personal rubric, kNN. `jester_eval.concordance_rows` computes it for all
+users at once.
 
-## Phase 1: Jev with a generic rubric
+## Phase 1: done (2026-09-20)
 
-Jev scores a joke, not a user. One rubric therefore costs 100 Jev calls for
-all 7,200 users. Do this for three generic rubrics and report per-user
-concordance against the tercile labels:
-
-1. `criteria/probe/a-generic.json` (not / somewhat / very funny).
-2. `criteria/seed.json` (the joke-preference seed).
-3. A crowd-informed rubric written once from the ten highest and lowest
-   mean-rated train jokes (no personal data; this is the "best generic
-   text" arm).
-
-Deliverable: `results/jester/generic/summary.json` and a table in
-`docs/jester-results.md` with, per rubric, the median concordance over all
-7,200 users and over the 60 selected users, next to crowd 0.612 and kNN
-0.659. This is the baseline any personal rubric must beat, and it also
-says how far generic text sits below the crowd mean.
-
-Work items:
-
-- `src/joke_pref/jester.py`: `user_items(user_id, split) ->
-  list[LabeledPremise]` where each "premise" is a group of 5 jokes with an
-  empty setup and the joke text as the punchline, so the existing adapter,
-  metric and GEPA loop work unchanged. Groups are fixed per user by seed.
-  `joke_text()` must not prepend an empty setup line; add a guard.
-- `joke-pref jester-evaluate --criteria X --users all|selected` in `cli.py`.
-- Offline test with a synthetic matrix.
+Result in `docs/jester-results.md`. Generic rubric `probe/a-generic.json`
+is the baseline to beat: median concordance 0.604 on all users, 0.553 on
+the selected 60. References on the same tercile truth: crowd 0.650 / 0.524,
+kNN 0.710 / 0.734. Command: `joke-pref jester-evaluate`. Grouping for
+Phase 2: `jester.user_items(ratings, jokes, user_id, split)`.
 
 ## Phase 2: Jev + GEPA per user
 
@@ -75,6 +56,13 @@ val = a 3-group hold-out of the train set (GEPA needs a val set; do not
 touch the 40 test jokes), joint proposer, minibatch 6 groups (30 jokes),
 budget 600 metric calls, DeepSeek Flash as writer. Score the 40 test jokes
 with the best rubric.
+
+Work items: `joke-pref jester-optimize --user U` built on `runs.optimize`
+with `user_items(..., "train")` split 9 groups train / 3 groups val, then
+`jester_eval.evaluate_rubric` on the best rubric for that one user; a driver
+that loops over the 60 selected users (`selected_user_ids` in
+`results/jester/generic-a-generic/summary.json`) and appends one row per
+user to `results/jester/personal/users.csv`.
 
 Controls, same test jokes:
 

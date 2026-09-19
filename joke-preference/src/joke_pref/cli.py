@@ -1,4 +1,4 @@
-"""Command line: label, stats, split, probe, evaluate, optimize.
+"""Command line: label, stats, split, probe, evaluate, optimize, jester-evaluate.
 
 Paths are relative to the project directory. Run from `joke-preference/`.
 """
@@ -238,6 +238,60 @@ def cmd_optimize(args) -> int:
     return 0
 
 
+def cmd_jester_evaluate(args) -> int:
+    """Score the 100 Jester jokes with one rubric and report per-user
+    concordance against tercile labels, next to the crowd and kNN ceilings."""
+    import numpy as np
+
+    from joke_pref.criteria import save_criteria
+    from joke_pref.jester import complete_users, load_jokes, load_ratings
+    from joke_pref.jester_eval import evaluate_rubric, selected_users, user_mask, write_user_table
+
+    jokes = load_jokes()
+    ratings = complete_users(load_ratings())
+    criteria = load_criteria(args.criteria)
+    scorer = _scorer(args)
+    t0 = datetime.now(timezone.utc)
+    results = scorer.score_many([j.text for j in jokes], criteria)
+    ev = evaluate_rubric(results, jokes, ratings, seed=args.seed, k=args.k)
+    chosen = selected_users(args.user_stats, seed=args.seed)
+    mask = user_mask(ratings, chosen)
+    name = args.name or f"{Path(args.criteria).stem}-{_stamp()}"
+    out = Path(args.results) / "jester" / name
+    out.mkdir(parents=True, exist_ok=True)
+    with open(out / "jokes.jsonl", "w", encoding="utf-8") as fh:
+        for j, r in zip(jokes, results):
+            fh.write(json.dumps({"joke_id": j.id, **r.as_dict()}, ensure_ascii=False) + "\n")
+    write_user_table(out / "users.csv", ev)
+    save_criteria(criteria, out / "criteria.json")
+    summary = {
+        "criteria_file": str(args.criteria),
+        "seed": args.seed,
+        "k": args.k,
+        "n_jokes": len(jokes),
+        "test_joke_ids": ev.test_ids,
+        "invalid_results": ev.n_invalid,
+        "model": scorer.model,
+        "jev_calls": scorer.calls,
+        "mean_latency_ms": float(np.mean([r.latency_ms for r in results])),
+        "created_at": t0.isoformat(timespec="seconds"),
+        "all_users": ev.table(),
+        "selected_users": ev.table(mask),
+        "selected_user_ids": chosen,
+    }
+    (out / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
+    for group in ("all_users", "selected_users"):
+        t = summary[group]
+        print(
+            f"{group:<15s} n={t['n_users']:5d}  rubric {t['rubric_concordance_median']:.3f}  "
+            f"crowd {t['crowd_concordance_median']:.3f}  kNN {t['knn_concordance_median']:.3f}  "
+            f"agreement {t['rubric_agreement_mean']:.3f}  exact {t['rubric_exact_accuracy_mean']:.3f}  "
+            f"beats crowd {t['rubric_beats_crowd_share']:.2f}"
+        )
+    print(f"-> {out}")
+    return 0
+
+
 # --- parser -----------------------------------------------------------------
 
 
@@ -298,6 +352,15 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--name")
     jev_args(s)
     s.set_defaults(fn=cmd_optimize)
+
+    s = sub.add_parser("jester-evaluate", help="score the Jester jokes with one rubric, per-user concordance")
+    s.add_argument("--criteria", default="criteria/probe/a-generic.json")
+    s.add_argument("--seed", type=int, default=20260919, help="item split seed")
+    s.add_argument("--k", type=int, default=80, help="kNN neighbours for the ceiling")
+    s.add_argument("--user-stats", default="data/jester/user_stats.csv")
+    s.add_argument("--name")
+    jev_args(s)
+    s.set_defaults(fn=cmd_jester_evaluate)
     return p
 
 

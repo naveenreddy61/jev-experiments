@@ -73,8 +73,14 @@ class LabeledPremise:
 
 
 def joke_text(premise: Premise, punchline: Punchline) -> str:
-    """The full joke as Jev sees it: setup, blank line, punchline."""
-    return f"{premise.premise.strip()}\n\n{punchline.text.strip()}"
+    """The full joke as Jev sees it: setup, blank line, punchline.
+
+    A premise with an empty setup (a Jester group) gives the punchline alone.
+    """
+    setup = premise.premise.strip()
+    if not setup:
+        return punchline.text.strip()
+    return f"{setup}\n\n{punchline.text.strip()}"
 
 
 def punchline_id(premise_id: str, index: int) -> str:

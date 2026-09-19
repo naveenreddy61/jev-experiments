@@ -37,28 +37,14 @@ SCALE = 20.0  # the rating range, -10..+10, for NMAE
 QUANTILES = (0.05, 0.10, 0.25, 0.50, 0.75, 0.90, 0.95)
 
 
-# --- metric -----------------------------------------------------------------
-
-
-def concordance_rows(preds: np.ndarray, truth: np.ndarray) -> np.ndarray:
-    """Pairwise concordance for each row.
-
-    The definition mirrors `joke_pref.metric.pairs` and `concordance`: a pair
-    with equal true values is skipped, and a tie in the prediction counts one
-    half. A row with no usable pair gives `nan`.
-    """
-    d_true = truth[:, :, None] - truth[:, None, :]
-    d_pred = preds[:, :, None] - preds[:, None, :]
-    n = truth.shape[1]
-    upper = np.triu(np.ones((n, n), dtype=bool), k=1)
-    usable = (d_true != 0) & upper
-    credit = np.where(
-        d_pred == 0, 0.5, (np.sign(d_pred) == np.sign(d_true)).astype(float)
-    )
-    total = usable.sum(axis=(1, 2)).astype(float)
-    got = np.where(usable, credit, 0.0).sum(axis=(1, 2))
-    with np.errstate(invalid="ignore", divide="ignore"):
-        return np.where(total > 0, got / np.where(total == 0, 1, total), np.nan)
+# The metric and the predictors live in `joke_pref.jester_eval` now.
+from joke_pref.jester_eval import (  # noqa: E402
+    bin_by_own_quantiles,
+    concordance_rows,
+    eigentaste_predict,
+    knn_predict,
+    loo_item_mean,
+)
 
 
 def check_metric_against_reference(preds: np.ndarray, truth: np.ndarray) -> None:
@@ -83,83 +69,6 @@ def show(name: str, x: np.ndarray) -> None:
     q = quantiles(x)
     cells = "  ".join(f"{k}={v:+.3f}" for k, v in q.items())
     print(f"{name:<34s} {cells}")
-
-
-# --- predictors --------------------------------------------------------------
-
-
-def loo_item_mean(x: np.ndarray) -> np.ndarray:
-    """Leave-one-out item mean. `out[u, j]` excludes user u."""
-    n = x.shape[0]
-    return (x.sum(axis=0)[None, :] - x) / (n - 1)
-
-
-def knn_predict(
-    x: np.ndarray, train: np.ndarray, test: np.ndarray, k: int, *, chunk: int = 512
-) -> np.ndarray:
-    """User-based kNN. Pearson similarity on the train jokes only.
-
-    The similarity block is built one chunk of users at a time, so the peak
-    memory stays near `chunk * n_users` floats.
-    """
-    tr = x[:, train]
-    mu = tr.mean(axis=1, keepdims=True)
-    sd = tr.std(axis=1, keepdims=True)
-    sd[sd == 0] = 1.0
-    z = ((tr - mu) / sd).astype(np.float32)
-    te_c = (x[:, test] - mu).astype(np.float32)
-
-    out = np.empty((x.shape[0], test.size), dtype=np.float64)
-    for start in range(0, x.shape[0], chunk):
-        stop = min(start + chunk, x.shape[0])
-        sim = (z[start:stop] @ z.T) / tr.shape[1]
-        sim[np.arange(stop - start), np.arange(start, stop)] = -np.inf
-        top = np.argpartition(-sim, k, axis=1)[:, :k]
-        w = np.take_along_axis(sim, top, axis=1).astype(np.float64)
-        neigh = te_c[top].astype(np.float64)  # (chunk, k, n_test)
-        denom = np.abs(w).sum(axis=1)
-        denom[denom == 0] = 1.0
-        out[start:stop] = mu[start:stop] + (w[:, :, None] * neigh).sum(axis=1) / denom[
-            :, None
-        ]
-        del sim, top, w, neigh
-    return out
-
-
-def eigentaste_predict(
-    x: np.ndarray, train: np.ndarray, test: np.ndarray, *, bins: int = 8, floor: int = 20
-) -> np.ndarray:
-    """Eigentaste style: two principal components of the train block, a grid
-    of cells, then the cell mean of each test joke without the user itself."""
-    tr = x[:, train]
-    tr_c = tr - tr.mean(axis=0, keepdims=True)
-    _, _, vt = np.linalg.svd(tr_c, full_matrices=False)
-    proj = tr_c @ vt[:2].T  # (n, 2)
-
-    cell = np.zeros(x.shape[0], dtype=np.int64)
-    for d in range(2):
-        edges = np.quantile(proj[:, d], np.linspace(0, 1, bins + 1)[1:-1])
-        cell = cell * bins + np.searchsorted(edges, proj[:, d])
-
-    te = x[:, test]
-    fallback = loo_item_mean(te)
-    out = fallback.copy()
-    for c in np.unique(cell):
-        rows = np.flatnonzero(cell == c)
-        if rows.size <= floor:
-            continue
-        block = te[rows]
-        out[rows] = (block.sum(axis=0)[None, :] - block) / (rows.size - 1)
-    return out
-
-
-def bin_by_own_quantiles(x: np.ndarray, n_bins: int) -> np.ndarray:
-    """Bin each user's 100 ratings by that user's own quantiles."""
-    edges = np.quantile(x, np.linspace(0, 1, n_bins + 1)[1:-1], axis=1).T
-    out = np.empty_like(x, dtype=np.int64)
-    for i in range(x.shape[0]):
-        out[i] = np.searchsorted(edges[i], x[i], side="right")
-    return out
 
 
 def pair_supply(truth: np.ndarray) -> float:

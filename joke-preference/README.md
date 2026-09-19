@@ -113,3 +113,10 @@ criteria learned to name.
 ```bash
 PYTHONPATH=src uv run python -m unittest discover -s tests -t .
 ```
+
+## Jester
+
+`scripts/fetch_jester.py` downloads the Jester data. `joke-pref
+jester-evaluate --criteria X` scores the 100 jokes with one rubric and
+reports per-user concordance for 7,200 users next to the crowd and kNN
+ceilings. See `docs/jester-signal.md` and `docs/jester-results.md`.
