@@ -183,7 +183,7 @@ Jev scored 54%.
 
 DeepSeek barely noticed the change. Jev fell off a cliff. On the LaTeX part of
 the long set, twenty valid and twenty broken, Jev got exactly twenty right.
-That is not "close to chance". It is chance.
+It is chance.
 
 ## What Jev actually does when it cannot tell
 
@@ -292,10 +292,6 @@ is confidently high whether it is right or wrong.
   manageable. A model that is wrong and sure, on exactly the inputs a human
   cannot check at a glance, is a trap.
 
-The natural next shape is a cascade: Jev first, escalate anything it is unsure
-about to a reasoning model. We have not built it, and our data does not say
-where the threshold should go, because Jev is not unsure on the items where
-you would need it to be.
 
 Summary in one line: **System One answers what the artifact makes obvious.
 Anything that needs counting needs something that can count.**
@@ -332,13 +328,6 @@ number.
   That is the fairest number to hold against the "chance" headline. It is
   still thirty points behind the reasoning model, and you would only know to
   cut at 0.8 by peeking at the answers.
-- **One reasoning model, and not the strongest one.** DeepSeek Flash is the
-  fast, cheap end of that family. A bigger model would presumably close the
-  remaining 4%, which does not change the story.
-- **One author for the hard items.** Another author would find different
-  faults, and probably a different LaTeX-shaped hole.
-- **We measured time, not money.** Jev is about seven times faster at the
-  median. We did not compute a per-item cost for either API.
 
 ## Try it yourself
 
