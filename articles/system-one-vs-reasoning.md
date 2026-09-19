@@ -223,5 +223,5 @@ makes obvious. Everything else needs something that can count.**
 - "Valid code that looks broken" is half of the hard set by construction. That
   is a deliberate stress test, not a sample of code in the wild.
 - The harness, the data, the raw predictions and the full reasoning traces are
-  all in [`jev-testing/`](../jev-testing/). Every number above is
+  all in [`parsing-experiments/`](../parsing-experiments/). Every number above is
   recomputable from it.

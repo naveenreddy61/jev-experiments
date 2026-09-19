@@ -32,7 +32,7 @@ Read the write-up: **[Does This Even Parse?](articles/system-one-vs-reasoning.md
 | path | what it is |
 |---|---|
 | [`articles/`](articles/) | Write-ups for a general audience. |
-| [`jev-testing/`](jev-testing/) | Experiment 1: the eval harness, the datasets, the oracles, and every raw run. |
+| [`parsing-experiments/`](parsing-experiments/) | Experiment 1: the eval harness, the datasets, the oracles, and every raw run. |
 
 ## Reproducing
 
@@ -40,7 +40,7 @@ Everything in the article is recomputable from this repo. The raw predictions
 are committed, including DeepSeek's full reasoning traces.
 
 ```bash
-cd jev-testing
+cd parsing-experiments
 python3.12 -m venv .venv && source .venv/bin/activate
 pip install -e '.[jev]'
 
@@ -56,7 +56,7 @@ python scripts/analyze_variance.py \
 
 Making new calls needs `JEV_API_KEY` or `DEEPSEEK_API_KEY` in the environment,
 and the oracle tools (`bash`, `gcc`, `pdflatex`, Python 3.12) for regenerating
-or revalidating data. See [`jev-testing/README.md`](jev-testing/README.md).
+or revalidating data. See [`parsing-experiments/README.md`](parsing-experiments/README.md).
 
 ## Caveats worth reading before quoting any number
 
@@ -73,7 +73,7 @@ or revalidating data. See [`jev-testing/README.md`](jev-testing/README.md).
 
 ## Results in detail
 
-- [Evaluation, full 200-item seed set](jev-testing/docs/evaluation.md)
-- [Extended hard set](jev-testing/docs/hard-set-v2.md)
-- [DeepSeek reasoning tokens](jev-testing/docs/reasoning-tokens.md)
-- [Run-to-run variance](jev-testing/docs/run-variance.md)
+- [Evaluation, full 200-item seed set](parsing-experiments/docs/evaluation.md)
+- [Extended hard set](parsing-experiments/docs/hard-set-v2.md)
+- [DeepSeek reasoning tokens](parsing-experiments/docs/reasoning-tokens.md)
+- [Run-to-run variance](parsing-experiments/docs/run-variance.md)
