@@ -1,0 +1,512 @@
+{
+  "n": 200,
+  "n_valid": 200,
+  "n_invalid": 0,
+  "invalid_rate": 0.0,
+  "accuracy": 0.785,
+  "accuracy_note": "accuracy is computed on valid outputs only; invalids are not imputed",
+  "latency_ms": {
+    "mean": 375.2881795936264,
+    "p50": 341.7812086408958,
+    "p95": 461.47090190788714
+  },
+  "calibration": {
+    "n_with_p_yes": 200,
+    "brier": 0.15069649999999998,
+    "ece": 0.14585000000000004,
+    "mean_confidence": 0.82365,
+    "confidence_note": "confidence = max(p_yes, 1 - p_yes)",
+    "reliability": [
+      {
+        "bin": 0,
+        "lo": 0.0,
+        "hi": 0.1,
+        "count": 12,
+        "avg_p_yes": 0.06,
+        "empirical_yes_rate": 0.0
+      },
+      {
+        "bin": 1,
+        "lo": 0.1,
+        "hi": 0.2,
+        "count": 21,
+        "avg_p_yes": 0.14619047619047618,
+        "empirical_yes_rate": 0.19047619047619047
+      },
+      {
+        "bin": 2,
+        "lo": 0.2,
+        "hi": 0.3,
+        "count": 18,
+        "avg_p_yes": 0.25277777777777777,
+        "empirical_yes_rate": 0.0
+      },
+      {
+        "bin": 3,
+        "lo": 0.3,
+        "hi": 0.4,
+        "count": 8,
+        "avg_p_yes": 0.3425,
+        "empirical_yes_rate": 0.0
+      },
+      {
+        "bin": 4,
+        "lo": 0.4,
+        "hi": 0.5,
+        "count": 6,
+        "avg_p_yes": 0.45166666666666666,
+        "empirical_yes_rate": 0.0
+      },
+      {
+        "bin": 5,
+        "lo": 0.5,
+        "hi": 0.6,
+        "count": 7,
+        "avg_p_yes": 0.5528571428571428,
+        "empirical_yes_rate": 0.0
+      },
+      {
+        "bin": 6,
+        "lo": 0.6,
+        "hi": 0.7,
+        "count": 7,
+        "avg_p_yes": 0.6557142857142857,
+        "empirical_yes_rate": 0.2857142857142857
+      },
+      {
+        "bin": 7,
+        "lo": 0.7,
+        "hi": 0.8,
+        "count": 18,
+        "avg_p_yes": 0.7538888888888889,
+        "empirical_yes_rate": 0.3888888888888889
+      },
+      {
+        "bin": 8,
+        "lo": 0.8,
+        "hi": 0.9,
+        "count": 49,
+        "avg_p_yes": 0.8453061224489796,
+        "empirical_yes_rate": 0.7551020408163265
+      },
+      {
+        "bin": 9,
+        "lo": 0.9,
+        "hi": 1.0,
+        "count": 54,
+        "avg_p_yes": 0.9272222222222223,
+        "empirical_yes_rate": 0.9259259259259259
+      }
+    ]
+  },
+  "by_task": {
+    "bash.parse": {
+      "n": 50,
+      "n_valid": 50,
+      "n_invalid": 0,
+      "invalid_rate": 0.0,
+      "accuracy": 0.72,
+      "accuracy_note": "accuracy is computed on valid outputs only; invalids are not imputed",
+      "latency_ms": {
+        "mean": 391.07421496417373,
+        "p50": 347.24768809974194,
+        "p95": 602.1678189863441
+      },
+      "calibration": {
+        "n_with_p_yes": 50,
+        "brier": 0.20185199999999998,
+        "ece": 0.21759999999999993,
+        "mean_confidence": 0.8240000000000001,
+        "confidence_note": "confidence = max(p_yes, 1 - p_yes)",
+        "reliability": [
+          {
+            "bin": 0,
+            "lo": 0.0,
+            "hi": 0.1,
+            "count": 0,
+            "avg_p_yes": null,
+            "empirical_yes_rate": null
+          },
+          {
+            "bin": 1,
+            "lo": 0.1,
+            "hi": 0.2,
+            "count": 4,
+            "avg_p_yes": 0.16,
+            "empirical_yes_rate": 0.0
+          },
+          {
+            "bin": 2,
+            "lo": 0.2,
+            "hi": 0.3,
+            "count": 3,
+            "avg_p_yes": 0.26,
+            "empirical_yes_rate": 0.0
+          },
+          {
+            "bin": 3,
+            "lo": 0.3,
+            "hi": 0.4,
+            "count": 3,
+            "avg_p_yes": 0.3233333333333333,
+            "empirical_yes_rate": 0.0
+          },
+          {
+            "bin": 4,
+            "lo": 0.4,
+            "hi": 0.5,
+            "count": 1,
+            "avg_p_yes": 0.45,
+            "empirical_yes_rate": 0.0
+          },
+          {
+            "bin": 5,
+            "lo": 0.5,
+            "hi": 0.6,
+            "count": 1,
+            "avg_p_yes": 0.58,
+            "empirical_yes_rate": 0.0
+          },
+          {
+            "bin": 6,
+            "lo": 0.6,
+            "hi": 0.7,
+            "count": 1,
+            "avg_p_yes": 0.68,
+            "empirical_yes_rate": 0.0
+          },
+          {
+            "bin": 7,
+            "lo": 0.7,
+            "hi": 0.8,
+            "count": 4,
+            "avg_p_yes": 0.7375,
+            "empirical_yes_rate": 0.0
+          },
+          {
+            "bin": 8,
+            "lo": 0.8,
+            "hi": 0.9,
+            "count": 23,
+            "avg_p_yes": 0.8582608695652173,
+            "empirical_yes_rate": 0.6956521739130435
+          },
+          {
+            "bin": 9,
+            "lo": 0.9,
+            "hi": 1.0,
+            "count": 10,
+            "avg_p_yes": 0.909,
+            "empirical_yes_rate": 0.9
+          }
+        ]
+      }
+    },
+    "c.compile": {
+      "n": 50,
+      "n_valid": 50,
+      "n_invalid": 0,
+      "invalid_rate": 0.0,
+      "accuracy": 0.84,
+      "accuracy_note": "accuracy is computed on valid outputs only; invalids are not imputed",
+      "latency_ms": {
+        "mean": 381.52809754014015,
+        "p50": 351.9208960933611,
+        "p95": 461.31804138422
+      },
+      "calibration": {
+        "n_with_p_yes": 50,
+        "brier": 0.11223000000000001,
+        "ece": 0.137,
+        "mean_confidence": 0.8637999999999999,
+        "confidence_note": "confidence = max(p_yes, 1 - p_yes)",
+        "reliability": [
+          {
+            "bin": 0,
+            "lo": 0.0,
+            "hi": 0.1,
+            "count": 6,
+            "avg_p_yes": 0.06333333333333334,
+            "empirical_yes_rate": 0.0
+          },
+          {
+            "bin": 1,
+            "lo": 0.1,
+            "hi": 0.2,
+            "count": 5,
+            "avg_p_yes": 0.134,
+            "empirical_yes_rate": 0.0
+          },
+          {
+            "bin": 2,
+            "lo": 0.2,
+            "hi": 0.3,
+            "count": 4,
+            "avg_p_yes": 0.24250000000000002,
+            "empirical_yes_rate": 0.0
+          },
+          {
+            "bin": 3,
+            "lo": 0.3,
+            "hi": 0.4,
+            "count": 1,
+            "avg_p_yes": 0.37,
+            "empirical_yes_rate": 0.0
+          },
+          {
+            "bin": 4,
+            "lo": 0.4,
+            "hi": 0.5,
+            "count": 1,
+            "avg_p_yes": 0.44,
+            "empirical_yes_rate": 0.0
+          },
+          {
+            "bin": 5,
+            "lo": 0.5,
+            "hi": 0.6,
+            "count": 3,
+            "avg_p_yes": 0.5533333333333333,
+            "empirical_yes_rate": 0.0
+          },
+          {
+            "bin": 6,
+            "lo": 0.6,
+            "hi": 0.7,
+            "count": 0,
+            "avg_p_yes": null,
+            "empirical_yes_rate": null
+          },
+          {
+            "bin": 7,
+            "lo": 0.7,
+            "hi": 0.8,
+            "count": 0,
+            "avg_p_yes": null,
+            "empirical_yes_rate": null
+          },
+          {
+            "bin": 8,
+            "lo": 0.8,
+            "hi": 0.9,
+            "count": 5,
+            "avg_p_yes": 0.8540000000000001,
+            "empirical_yes_rate": 0.6
+          },
+          {
+            "bin": 9,
+            "lo": 0.9,
+            "hi": 1.0,
+            "count": 25,
+            "avg_p_yes": 0.9236,
+            "empirical_yes_rate": 0.88
+          }
+        ]
+      }
+    },
+    "latex.parse": {
+      "n": 50,
+      "n_valid": 50,
+      "n_invalid": 0,
+      "invalid_rate": 0.0,
+      "accuracy": 0.68,
+      "accuracy_note": "accuracy is computed on valid outputs only; invalids are not imputed",
+      "latency_ms": {
+        "mean": 363.2124933321029,
+        "p50": 334.96914606075734,
+        "p95": 443.00379810156295
+      },
+      "calibration": {
+        "n_with_p_yes": 50,
+        "brier": 0.227114,
+        "ece": 0.26259999999999994,
+        "mean_confidence": 0.7606,
+        "confidence_note": "confidence = max(p_yes, 1 - p_yes)",
+        "reliability": [
+          {
+            "bin": 0,
+            "lo": 0.0,
+            "hi": 0.1,
+            "count": 0,
+            "avg_p_yes": null,
+            "empirical_yes_rate": null
+          },
+          {
+            "bin": 1,
+            "lo": 0.1,
+            "hi": 0.2,
+            "count": 4,
+            "avg_p_yes": 0.17,
+            "empirical_yes_rate": 1.0
+          },
+          {
+            "bin": 2,
+            "lo": 0.2,
+            "hi": 0.3,
+            "count": 6,
+            "avg_p_yes": 0.26333333333333336,
+            "empirical_yes_rate": 0.0
+          },
+          {
+            "bin": 3,
+            "lo": 0.3,
+            "hi": 0.4,
+            "count": 4,
+            "avg_p_yes": 0.35,
+            "empirical_yes_rate": 0.0
+          },
+          {
+            "bin": 4,
+            "lo": 0.4,
+            "hi": 0.5,
+            "count": 3,
+            "avg_p_yes": 0.4566666666666667,
+            "empirical_yes_rate": 0.0
+          },
+          {
+            "bin": 5,
+            "lo": 0.5,
+            "hi": 0.6,
+            "count": 2,
+            "avg_p_yes": 0.53,
+            "empirical_yes_rate": 0.0
+          },
+          {
+            "bin": 6,
+            "lo": 0.6,
+            "hi": 0.7,
+            "count": 0,
+            "avg_p_yes": null,
+            "empirical_yes_rate": null
+          },
+          {
+            "bin": 7,
+            "lo": 0.7,
+            "hi": 0.8,
+            "count": 13,
+            "avg_p_yes": 0.7584615384615384,
+            "empirical_yes_rate": 0.46153846153846156
+          },
+          {
+            "bin": 8,
+            "lo": 0.8,
+            "hi": 0.9,
+            "count": 15,
+            "avg_p_yes": 0.8226666666666667,
+            "empirical_yes_rate": 0.8
+          },
+          {
+            "bin": 9,
+            "lo": 0.9,
+            "hi": 1.0,
+            "count": 3,
+            "avg_p_yes": 0.9333333333333332,
+            "empirical_yes_rate": 1.0
+          }
+        ]
+      }
+    },
+    "python.parse": {
+      "n": 50,
+      "n_valid": 50,
+      "n_invalid": 0,
+      "invalid_rate": 0.0,
+      "accuracy": 0.9,
+      "accuracy_note": "accuracy is computed on valid outputs only; invalids are not imputed",
+      "latency_ms": {
+        "mean": 365.33791253808886,
+        "p50": 339.4533960381523,
+        "p95": 458.7053019320592
+      },
+      "calibration": {
+        "n_with_p_yes": 50,
+        "brier": 0.06159,
+        "ece": 0.15299999999999997,
+        "mean_confidence": 0.8462000000000001,
+        "confidence_note": "confidence = max(p_yes, 1 - p_yes)",
+        "reliability": [
+          {
+            "bin": 0,
+            "lo": 0.0,
+            "hi": 0.1,
+            "count": 6,
+            "avg_p_yes": 0.05666666666666667,
+            "empirical_yes_rate": 0.0
+          },
+          {
+            "bin": 1,
+            "lo": 0.1,
+            "hi": 0.2,
+            "count": 8,
+            "avg_p_yes": 0.135,
+            "empirical_yes_rate": 0.0
+          },
+          {
+            "bin": 2,
+            "lo": 0.2,
+            "hi": 0.3,
+            "count": 5,
+            "avg_p_yes": 0.244,
+            "empirical_yes_rate": 0.0
+          },
+          {
+            "bin": 3,
+            "lo": 0.3,
+            "hi": 0.4,
+            "count": 0,
+            "avg_p_yes": null,
+            "empirical_yes_rate": null
+          },
+          {
+            "bin": 4,
+            "lo": 0.4,
+            "hi": 0.5,
+            "count": 1,
+            "avg_p_yes": 0.45,
+            "empirical_yes_rate": 0.0
+          },
+          {
+            "bin": 5,
+            "lo": 0.5,
+            "hi": 0.6,
+            "count": 1,
+            "avg_p_yes": 0.57,
+            "empirical_yes_rate": 0.0
+          },
+          {
+            "bin": 6,
+            "lo": 0.6,
+            "hi": 0.7,
+            "count": 6,
+            "avg_p_yes": 0.6516666666666667,
+            "empirical_yes_rate": 0.3333333333333333
+          },
+          {
+            "bin": 7,
+            "lo": 0.7,
+            "hi": 0.8,
+            "count": 1,
+            "avg_p_yes": 0.76,
+            "empirical_yes_rate": 1.0
+          },
+          {
+            "bin": 8,
+            "lo": 0.8,
+            "hi": 0.9,
+            "count": 6,
+            "avg_p_yes": 0.8450000000000001,
+            "empirical_yes_rate": 1.0
+          },
+          {
+            "bin": 9,
+            "lo": 0.9,
+            "hi": 1.0,
+            "count": 16,
+            "avg_p_yes": 0.943125,
+            "empirical_yes_rate": 1.0
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "provider": "deepseek-flash",
+  "mock": false,
+  "n": 40,
+  "data": [
+    "<scratchpad>/subset/bash.parse.jsonl",
+    "<scratchpad>/subset/c.compile.jsonl",
+    "<scratchpad>/subset/latex.parse.jsonl",
+    "<scratchpad>/subset/python.parse.jsonl"
+  ],
+  "created_at": "2026-09-18T15:47:00.688144+00:00",
+  "version": "0.1.0"
+}

@@ -1,0 +1,6 @@
+# Baseline runtime is stdlib-only (Python 3.12+).
+# Install the package in editable mode:
+#   pip install -e .
+#
+# The Jev provider needs the TypeSafe SDK:
+#   pip install -e '.[jev]'
