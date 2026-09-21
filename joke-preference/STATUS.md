@@ -1,6 +1,7 @@
 # STATUS: joke-preference
 
-Snapshot on 2026-09-20, after the Jester chunk (all three phases).
+Snapshot on 2026-09-21. Experiment closed as a negative result; article in
+`articles/a-rubric-is-not-a-recommender.md`.
 
 ## What operates correctly
 

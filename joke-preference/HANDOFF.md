@@ -98,11 +98,17 @@ Commands: `joke-pref jester-evaluate`, `joke-pref jester-optimize`,
 `joke-pref judge`, `scripts/jester_phase2_report.py`. Per-user runs in
 `results/jester/personal/u<id>/` (gitignored).
 
+## Closed as a negative result (2026-09-21)
+
+Naveen's call: the method beats generic text and the crowd mean for
+atypical users but not the cheapest rating-based baseline, so the
+experiment is a negative result. The article is
+`articles/a-rubric-is-not-a-recommender.md`. The monorepo moves to a new
+experiment idea; `PLAN.md` keeps the leftover ideas in case one is picked up.
+
 ## First action for the next session
 
-`PLAN.md` lists candidates for the next chunk. Naveen picks. The write-up
-(candidate 1) needs no more model calls. Candidate 2 (why typical users
-gain nothing) and candidate 5 (a faster writer) are the cheap experiments.
+Ask Naveen which new experiment starts. Do not run more Jester jobs.
 
 ## Things not to redo
 
